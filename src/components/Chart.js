@@ -1,4 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Provider, createClient, useQuery } from 'urql';
+import * as actions from '../store/actions';
+import * as queries from '../store/queries';
+import * as subscriptions from '../store/subscriptions';
 
 export default () => {
   const abd = '';
@@ -56,7 +61,7 @@ query getLastKnownMeasurement ($metricName: String!) {
 ***
 
 query getMeasurements ($input: MeasurementQuery) {
-  getLastKnownMeasurement(input: $input) {
+  getMeasurements(input: $input) {
     metric
     at
     value
@@ -73,7 +78,7 @@ query getMeasurements ($input: MeasurementQuery) {
 ***
 
 query getMultipleMeasurements ($input: [MeasurementQuery]) {
-getLastKnownMeasurement(input: $input) {
+  getMultipleMeasurements(input: $input) {
     metric
     at
     value
