@@ -1,12 +1,16 @@
+/* global Plotly:true */
+
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Provider, createClient, useQuery } from 'urql';
 import LinearProgress from '@material-ui/core/LinearProgress';
+import createPlotlyComponent from 'react-plotly.js/factory';
 import * as actions from '../store/actions';
 import * as queries from '../store/queries';
 import * as subscriptions from '../store/subscriptions';
 
 const now = Date.now(); // TODO: Execute on select | other method
+const Plot = createPlotlyComponent(Plotly);
 
 const client = createClient({
   url: 'https://react.eogresources.com/graphql',
@@ -57,5 +61,18 @@ const Charts = () => {
 
   if (fetching) return <LinearProgress />;
 
-  return <div>Chart Here</div>;
+  return (
+    <Plot
+      data={[
+        {
+          x: [1, 2, 3],
+          y: [2, 6, 3],
+          type: 'scatter',
+          mode: 'lines+markers',
+          marker: { color: 'red' },
+        },
+      ]}
+      layout={{ width: 320, height: 240, title: 'A Fancy Plot' }}
+    />
+  );
 };
