@@ -1,3 +1,5 @@
+export const url = 'https://react.eogresources.com/graphql';
+
 export const HEARTBEAT = `
   query heartBeat {
     heartBeat

@@ -3,8 +3,9 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Provider, createClient, useQuery } from 'urql';
-import LinearProgress from '@material-ui/core/LinearProgress';
+import { LinearProgress } from '@material-ui/core';
 import createPlotlyComponent from 'react-plotly.js/factory';
+import ChartsSelect from './ChartsSelect';
 import * as actions from '../store/actions';
 import * as queries from '../store/queries';
 import * as subscriptions from '../store/subscriptions';
@@ -13,7 +14,7 @@ const now = Date.now(); // TODO: Execute on select | other method
 const Plot = createPlotlyComponent(Plotly);
 
 const client = createClient({
-  url: 'https://react.eogresources.com/graphql',
+  url: queries.url,
 });
 
 const measurementsSelector = state => {
@@ -22,14 +23,6 @@ const measurementsSelector = state => {
 
 const unpack = (rows, key, isDateTime) =>
   rows.map(row => (isDateTime ? new Date(row[key]) : row[key]));
-
-export default () => {
-  return (
-    <Provider value={client}>
-      <Charts />
-    </Provider>
-  );
-};
 
 const Charts = () => {
   const dispatch = useDispatch();
@@ -116,11 +109,22 @@ const Charts = () => {
   });
 
   return (
-    <Plot
-      data={plotData}
-      layout={plotLayout}
-      // style={{ display: 'block' }}
-      config={{ responsive: true }}
-    />
+    <div>
+      <ChartsSelect />
+      <Plot
+        data={plotData}
+        layout={plotLayout}
+        // style={{ display: 'block' }}
+        config={{ responsive: true }}
+      />
+    </div>
+  );
+};
+
+export default () => {
+  return (
+    <Provider value={client}>
+      <Charts />
+    </Provider>
   );
 };
