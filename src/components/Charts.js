@@ -1,4 +1,4 @@
-/* global Plotly:true */
+/* global Plotly */
 
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +20,9 @@ const measurementsSelector = state => {
   return state.charts.measurements;
 };
 
+const unpack = (rows, key, isDateTime) =>
+  rows.map(row => (isDateTime ? new Date(row[key]) : row[key]));
+
 export default () => {
   return (
     <Provider value={client}>
@@ -31,6 +34,29 @@ export default () => {
 const Charts = () => {
   const dispatch = useDispatch();
   const measurements = useSelector(measurementsSelector);
+  const axesValues = {};
+
+  if (Object.keys(measurements).length !== 0) {
+    const yaxis = {};
+    let yaxisIdCount = 0;
+
+    // measurements.a1 = measurements.tubingPressure.map(data => ({
+    //   ...data,
+    // }));
+    // measurements.a1[0].unit = 'unit1';
+
+    Object.keys(measurements).forEach(metric => {
+      const { unit } = measurements[metric][0];
+      yaxis[unit] = yaxis[unit] ? yaxisIdCount : (yaxisIdCount += 1);
+
+      axesValues[metric] = {
+        x: unpack(measurements[metric], 'at', true),
+        y: unpack(measurements[metric], 'value'),
+        unit,
+        yaxisId: yaxis[unit],
+      };
+    });
+  }
 
   const input = {
     metricName: 'tubingPressure',
@@ -61,18 +87,40 @@ const Charts = () => {
 
   if (fetching) return <LinearProgress />;
 
+  const plotData = Object.keys(axesValues).map(metric => {
+    const { x, y, unit, yaxisId } = axesValues[metric];
+
+    return {
+      name: metric,
+      x,
+      y,
+      yaxis: `y${yaxisId}`,
+      type: 'scatter',
+      mode: 'lines',
+      line: { width: 1 },
+      hoverinfo: 'all',
+      hovertext: unit,
+    };
+  });
+
+  const plotLayout = {};
+
+  Object.keys(axesValues).forEach(metric => {
+    const { unit, yaxisId } = axesValues[metric];
+
+    if (!plotLayout[`yaxis${yaxisId}`]) {
+      plotLayout[`yaxis${yaxisId}`] = {
+        title: unit,
+      };
+    }
+  });
+
   return (
     <Plot
-      data={[
-        {
-          x: [1, 2, 3],
-          y: [2, 6, 3],
-          type: 'scatter',
-          mode: 'lines+markers',
-          marker: { color: 'red' },
-        },
-      ]}
-      layout={{ width: 320, height: 240, title: 'A Fancy Plot' }}
+      data={plotData}
+      layout={plotLayout}
+      // style={{ display: 'block' }}
+      config={{ responsive: true }}
     />
   );
 };
