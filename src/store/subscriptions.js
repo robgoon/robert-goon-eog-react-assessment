@@ -1,3 +1,5 @@
+export const url = 'wss://react.eogresources.com/graphql';
+
 export const NEW_MEASUREMENT = `
   subscription newMeasurement {
     newMeasurement {

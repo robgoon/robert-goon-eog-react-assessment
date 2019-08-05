@@ -1,6 +1,7 @@
 import * as actions from '../actions';
 
 const initialState = {
+  currentMeasurements: {},
   measurements: {},
   metrics: [],
   selectedMetrics: [],
@@ -52,11 +53,31 @@ const getMultipleMeasurementsDataRecevied = (state, action) => {
   };
 };
 
+const subscriptionNewMeasurementReceived = (state, action) => {
+  const { newMeasurement } = action;
+  const newSubAdded = state.measurements[newMeasurement.metric]
+    ? [...state.measurements[newMeasurement.metric].slice(1), newMeasurement]
+    : [newMeasurement];
+
+  return {
+    ...state,
+    currentMeasurements: {
+      ...state.currentMeasurements,
+      [newMeasurement.metric]: newMeasurement,
+    },
+    measurements: {
+      ...state.measurements,
+      [newMeasurement.metric]: newSubAdded,
+    },
+  };
+};
+
 const handlers = {
   [actions.GET_METRICS_DATA_RECEIVED]: getMetricsDataRecevied,
   [actions.SET_SELECTED_METRICS]: setSelectedMetrics,
   [actions.GET_MEASUREMENTS_DATA_RECEIVED]: getMeasurementsDataRecevied,
   [actions.GET_MULTIPLE_MEASUREMENTS_DATA_RECEIVED]: getMultipleMeasurementsDataRecevied,
+  [actions.SUBSCRIPTION_NEW_MEASUREMENT_RECEIVED]: subscriptionNewMeasurementReceived,
 };
 
 export default (state = initialState, action) => {

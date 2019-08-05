@@ -2,23 +2,44 @@
 
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Provider, createClient, useQuery } from 'urql';
+import { SubscriptionClient } from 'subscriptions-transport-ws';
+import {
+  Provider,
+  createClient,
+  defaultExchanges,
+  subscriptionExchange,
+  useQuery,
+  useSubscription,
+} from 'urql';
 import { LinearProgress } from '@material-ui/core';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import ChartsSelect from './ChartsSelect';
+import MetricCard from './MetricCard';
 import * as actions from '../store/actions';
 import * as queries from '../store/queries';
 import * as subscriptions from '../store/subscriptions';
 
-const now = Date.now(); // TODO: Execute on select | other method
+const now = Date.now();
 const Plot = createPlotlyComponent(Plotly);
+
+const subClient = new SubscriptionClient(subscriptions.url, {});
 
 const client = createClient({
   url: queries.url,
+  exchanges: [
+    ...defaultExchanges,
+    subscriptionExchange({
+      forwardSubscription: operation => subClient.request(operation),
+    }),
+  ],
 });
 
 const measurementsSelector = state => {
   return state.charts.measurements;
+};
+
+const metricsSelector = state => {
+  return state.charts.metrics;
 };
 
 const selectedMetricsSelector = state => {
@@ -31,49 +52,34 @@ const unpack = (rows, key, isDateTime) =>
 const Charts = () => {
   const dispatch = useDispatch();
   const measurements = useSelector(measurementsSelector);
+  const metrics = useSelector(metricsSelector);
   const selectedMetrics = useSelector(selectedMetricsSelector);
   const axesValues = {};
   let yaxisIdCount = 0;
 
-    if (Object.keys(measurements).length !== 0) {
+  if (Object.keys(measurements).length !== 0) {
     const yaxis = {};
 
-    // measurements.a1 = measurements.tubingPressure.map(data => ({
-    //   ...data,
-    // }));
-    // measurements.a1[0].unit = 'unit1';
+    Object.keys(measurements)
+      .filter(metric => selectedMetrics.includes(metric))
+      .forEach(metric => {
+        const { unit } = measurements[metric][0];
+        yaxis[unit] = yaxis[unit] ? yaxisIdCount : (yaxisIdCount += 1);
 
-    Object.keys(measurements).forEach(metric => {
-      const { unit } = measurements[metric][0];
-      yaxis[unit] = yaxis[unit] ? yaxisIdCount : (yaxisIdCount += 1);
-
-      axesValues[metric] = {
-        x: unpack(measurements[metric], 'at', true),
-        y: unpack(measurements[metric], 'value'),
-        unit,
-        yaxisId: yaxis[unit],
-      };
-    });
+        axesValues[metric] = {
+          x: unpack(measurements[metric], 'at', true),
+          y: unpack(measurements[metric], 'value'),
+          unit,
+          yaxisId: yaxis[unit],
+        };
+      });
   }
-  console.log(axesValues);
 
-  const input = [
-    {
-      metricName: 'tubingPressure',
-      after: now - 30 * 60 * 1000, // min * sec * milli
-      before: now,
-    },
-    {
-      metricName: 'casingPressure',
-      after: now - 30 * 60 * 1000, // min * sec * milli
-      before: now,
-    },
-    {
-      metricName: 'oilTemp',
-      after: now - 30 * 60 * 1000, // min * sec * milli
-      before: now,
-    },
-  ];
+  const input = metrics.map(metric => ({
+    metricName: metric,
+    after: now - 30 * 60 * 1000, // min * sec * milli
+    before: now,
+  }));
 
   const [result] = useQuery({
     query: queries.GET_MULTIPLE_MEASUREMENTS,
@@ -82,24 +88,14 @@ const Charts = () => {
     },
   });
 
-  // const input = {
-  //   metricName: 'tubingPressure',
-  //   after: now - 30 * 60 * 1000, // min * sec * milli
-  //   before: now,
-  // };
-
-  // const [result] = useQuery({
-  //   query: queries.GET_MEASUREMENTS,
-  //   variables: {
-  //     input,
-  //   },
-  // });
-
   const { fetching, data, error } = result;
 
   useEffect(() => {
     if (error) {
-      dispatch({ type: actions.API_ERROR, error: error.message });
+      dispatch({
+        type: actions.API_ERROR,
+        error: error.message,
+      });
       return;
     }
 
@@ -110,11 +106,30 @@ const Charts = () => {
       type: actions.GET_MULTIPLE_MEASUREMENTS_DATA_RECEIVED,
       getMultipleMeasurements,
     });
-
-    // const { getMeasurements } = data;
-
-    // dispatch({ type: actions.GET_MEASUREMENTS_DATA_RECEIVED, getMeasurements });
   }, [dispatch, data, error]);
+
+  const [subResult] = useSubscription({ query: subscriptions.NEW_MEASUREMENT });
+
+  const subData = subResult.data;
+  const subError = subResult.error;
+
+  useEffect(() => {
+    if (subError) {
+      dispatch({
+        type: actions.API_ERROR,
+        error: subError.message,
+      });
+      return;
+    }
+
+    if (!subData) return;
+    const { newMeasurement } = subData;
+
+    dispatch({
+      type: actions.SUBSCRIPTION_NEW_MEASUREMENT_RECEIVED,
+      newMeasurement,
+    });
+  }, [dispatch, subData, subError]);
 
   if (fetching) return <LinearProgress />;
 
@@ -133,11 +148,9 @@ const Charts = () => {
     };
   });
 
-  console.log(plotData)
-
   const plotLayout = {
     showlegend: false,
-    xaxis: { domain: [0.1 * yaxisIdCount - 0.1] },
+    xaxis: { domain: [0.1 * yaxisIdCount - 0.05] },
   };
 
   Object.keys(axesValues).forEach(metric => {
@@ -156,6 +169,9 @@ const Charts = () => {
   return (
     <div>
       <ChartsSelect />
+      {selectedMetrics.map(metric => (
+        <MetricCard metric={metric} key={metric} />
+      ))}
       <Plot
         data={plotData}
         layout={plotLayout}

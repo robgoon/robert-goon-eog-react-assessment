@@ -28,7 +28,6 @@ const ChartsSelect = () => {
   const dispatch = useDispatch();
   const metrics = useSelector(metricsSelector);
   const selectedMetrics = useSelector(selectedMetricsSelector);
-  // const [selectedMetrics, setSelectedMetrics] = useState([]);
 
   const [result] = useQuery({
     query: queries.GET_METRICS,
