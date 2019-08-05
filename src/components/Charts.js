@@ -12,12 +12,20 @@ import {
   useSubscription,
 } from 'urql';
 import { LinearProgress } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import ChartsSelect from './ChartsSelect';
 import MetricCard from './MetricCard';
 import * as actions from '../store/actions';
 import * as queries from '../store/queries';
 import * as subscriptions from '../store/subscriptions';
+
+const useStyles = makeStyles({
+  metricCards: {
+    display: 'flex',
+    flexWrap: 'wrap',
+  },
+});
 
 const now = Date.now();
 const Plot = createPlotlyComponent(Plotly);
@@ -51,6 +59,7 @@ const unpack = (rows, key, isDateTime) =>
 
 const Charts = () => {
   const dispatch = useDispatch();
+  const classes = useStyles();
   const measurements = useSelector(measurementsSelector);
   const metrics = useSelector(metricsSelector);
   const selectedMetrics = useSelector(selectedMetricsSelector);
@@ -169,9 +178,11 @@ const Charts = () => {
   return (
     <div>
       <ChartsSelect />
-      {selectedMetrics.map(metric => (
-        <MetricCard metric={metric} key={metric} />
-      ))}
+      <div className={classes.metricCards}>
+        {selectedMetrics.map(metric => (
+          <MetricCard key={metric} metric={metric} />
+        ))}
+      </div>
       <Plot
         data={plotData}
         layout={plotLayout}

@@ -5,12 +5,27 @@ import {
   Chip,
   FormControl,
   Input,
+  InputLabel,
   LinearProgress,
   MenuItem,
   Select,
 } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 import * as actions from '../store/actions';
 import * as queries from '../store/queries';
+
+const useStyles = makeStyles({
+  chip: {
+    margin: 2,
+  },
+  chips: {
+    display: 'flex',
+    flexWrap: 'wrap',
+  },
+  formControl: {
+    minWidth: 200,
+  },
+});
 
 const client = createClient({
   url: queries.url,
@@ -26,6 +41,7 @@ const selectedMetricsSelector = state => {
 
 const ChartsSelect = () => {
   const dispatch = useDispatch();
+  const classes = useStyles();
   const metrics = useSelector(metricsSelector);
   const selectedMetrics = useSelector(selectedMetricsSelector);
 
@@ -56,16 +72,17 @@ const ChartsSelect = () => {
     });
 
   return (
-    <FormControl>
+    <FormControl className={classes.formControl}>
+      <InputLabel htmlFor="metrics-selector">Select Metric(s)</InputLabel>
       <Select
         multiple
         value={selectedMetrics}
         onChange={handleChange}
-        input={<Input />}
+        input={<Input id="metrics-selector" />}
         renderValue={selected => (
-          <div>
+          <div className={classes.chips}>
             {selected.map(value => (
-              <Chip key={value} label={value} />
+              <Chip key={value} label={value} className={classes.chip} />
             ))}
           </div>
         )}
