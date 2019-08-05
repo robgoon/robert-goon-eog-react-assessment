@@ -21,17 +21,22 @@ const measurementsSelector = state => {
   return state.charts.measurements;
 };
 
+const selectedMetricsSelector = state => {
+  return state.charts.selectedMetrics;
+};
+
 const unpack = (rows, key, isDateTime) =>
   rows.map(row => (isDateTime ? new Date(row[key]) : row[key]));
 
 const Charts = () => {
   const dispatch = useDispatch();
   const measurements = useSelector(measurementsSelector);
+  const selectedMetrics = useSelector(selectedMetricsSelector);
   const axesValues = {};
+  let yaxisIdCount = 0;
 
-  if (Object.keys(measurements).length !== 0) {
+    if (Object.keys(measurements).length !== 0) {
     const yaxis = {};
-    let yaxisIdCount = 0;
 
     // measurements.a1 = measurements.tubingPressure.map(data => ({
     //   ...data,
@@ -50,19 +55,45 @@ const Charts = () => {
       };
     });
   }
+  console.log(axesValues);
 
-  const input = {
-    metricName: 'tubingPressure',
-    after: now - 30 * 60 * 1000, // min * sec * milli
-    before: now,
-  };
+  const input = [
+    {
+      metricName: 'tubingPressure',
+      after: now - 30 * 60 * 1000, // min * sec * milli
+      before: now,
+    },
+    {
+      metricName: 'casingPressure',
+      after: now - 30 * 60 * 1000, // min * sec * milli
+      before: now,
+    },
+    {
+      metricName: 'oilTemp',
+      after: now - 30 * 60 * 1000, // min * sec * milli
+      before: now,
+    },
+  ];
 
   const [result] = useQuery({
-    query: queries.GET_MEASUREMENTS,
+    query: queries.GET_MULTIPLE_MEASUREMENTS,
     variables: {
       input,
     },
   });
+
+  // const input = {
+  //   metricName: 'tubingPressure',
+  //   after: now - 30 * 60 * 1000, // min * sec * milli
+  //   before: now,
+  // };
+
+  // const [result] = useQuery({
+  //   query: queries.GET_MEASUREMENTS,
+  //   variables: {
+  //     input,
+  //   },
+  // });
 
   const { fetching, data, error } = result;
 
@@ -73,9 +104,16 @@ const Charts = () => {
     }
 
     if (!data) return;
-    const { getMeasurements } = data;
+    const { getMultipleMeasurements } = data;
 
-    dispatch({ type: actions.GET_MEASUREMENTS_DATA_RECEIVED, getMeasurements });
+    dispatch({
+      type: actions.GET_MULTIPLE_MEASUREMENTS_DATA_RECEIVED,
+      getMultipleMeasurements,
+    });
+
+    // const { getMeasurements } = data;
+
+    // dispatch({ type: actions.GET_MEASUREMENTS_DATA_RECEIVED, getMeasurements });
   }, [dispatch, data, error]);
 
   if (fetching) return <LinearProgress />;
@@ -91,18 +129,25 @@ const Charts = () => {
       type: 'scatter',
       mode: 'lines',
       line: { width: 1 },
-      hoverinfo: 'all',
       hovertext: unit,
     };
   });
 
-  const plotLayout = {};
+  console.log(plotData)
+
+  const plotLayout = {
+    showlegend: false,
+    xaxis: { domain: [0.1 * yaxisIdCount - 0.1] },
+  };
 
   Object.keys(axesValues).forEach(metric => {
     const { unit, yaxisId } = axesValues[metric];
 
     if (!plotLayout[`yaxis${yaxisId}`]) {
       plotLayout[`yaxis${yaxisId}`] = {
+        overlaying: yaxisId === 1 ? 'free' : 'y',
+        position: 0.1 * yaxisId - 0.1,
+        showgrid: false,
         title: unit,
       };
     }
@@ -114,7 +159,7 @@ const Charts = () => {
       <Plot
         data={plotData}
         layout={plotLayout}
-        // style={{ display: 'block' }}
+        style={{ height: '80vh', width: '100vw' }}
         config={{ responsive: true }}
       />
     </div>

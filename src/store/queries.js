@@ -35,12 +35,15 @@ export const GET_MEASUREMENTS = `
 `;
 
 export const GET_MULTIPLE_MEASUREMENTS = `
-  query getMultipleMeasurements ($input: MeasurementQuery) {
+  query getMultipleMeasurements ($input: [MeasurementQuery]) {
     getMultipleMeasurements(input: $input) {
       metric
-      at
-      value
-      unit
+      measurements {
+        metric
+        at
+        value
+        unit
+      }
     }
   }
 `;

@@ -23,7 +23,7 @@ const setSelectedMetrics = (state, action) => {
   };
 };
 
-const singleMeasurementsDataRecevied = (state, action) => {
+const getMeasurementsDataRecevied = (state, action) => {
   const { getMeasurements } = action;
 
   return {
@@ -35,10 +35,28 @@ const singleMeasurementsDataRecevied = (state, action) => {
   };
 };
 
+const getMultipleMeasurementsDataRecevied = (state, action) => {
+  const { getMultipleMeasurements } = action;
+  const measurementsByMetric = {};
+
+  getMultipleMeasurements.forEach(measurements => {
+    measurementsByMetric[measurements.metric] = measurements.measurements;
+  });
+
+  return {
+    ...state,
+    measurements: {
+      ...state.measurements,
+      ...measurementsByMetric,
+    },
+  };
+};
+
 const handlers = {
   [actions.GET_METRICS_DATA_RECEIVED]: getMetricsDataRecevied,
   [actions.SET_SELECTED_METRICS]: setSelectedMetrics,
-  [actions.GET_MEASUREMENTS_DATA_RECEIVED]: singleMeasurementsDataRecevied,
+  [actions.GET_MEASUREMENTS_DATA_RECEIVED]: getMeasurementsDataRecevied,
+  [actions.GET_MULTIPLE_MEASUREMENTS_DATA_RECEIVED]: getMultipleMeasurementsDataRecevied,
 };
 
 export default (state = initialState, action) => {
